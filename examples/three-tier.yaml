@@ -1,0 +1,26 @@
+# yaml variant, similar to #3 below, with an explicit load balancer
+# this format makes it much easier for mortals to read and write,
+# based significantly on https://wiki.openstack.org/wiki/Heat/DSL
+name: "Hello WebApp Cluster with Database"
+components:
+  # key here equivalent to supplying a map with this as the value for key 'id'
+  hello_war:
+    content: hello.war
+    requires:
+    - type: com.example.java:WarDeploymentRequirement    # explicit req type says to "deploy"
+      fulfillment: id:frontend
+  hello_sql: 
+    content: hello.sql
+    type: com.example.database:Schema   # here, type of component defined
+    requires: id:backend                # assume Schema defines default req type "DB"
+  frontend:                # "platform component" implied by WarDeplReq above
+    requires:
+      database:            # frontend type must recognise a named "database" req
+        mode: CDI          # assume that req supports various injection modes
+        fulfillment: id:backend
+      com.example.lb:LoadBalanced:     # longhand req form: this is the 'type'
+        protocol: https                # assume that type recognises these attributes
+        algorithm: round-robin
+        sticky-sessions: true
+        fulfillment: id:lb
+  lb: { tags: [ "load-balancer" ] }    # tag it so we can monitor it afterwards
